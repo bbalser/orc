@@ -21,4 +21,8 @@ defmodule Orc.Chunk do
 
   @enforce_keys [:type, :binary, :stats]
   defstruct [:type, :binary, :stats]
+
+  def new(attrs) do
+    struct!(__MODULE__, attrs)
+  end
 end
