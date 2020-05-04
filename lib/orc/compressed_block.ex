@@ -7,7 +7,7 @@ defmodule Orc.CompressedBlock do
           type: Orc.Type.t(),
           estimated_size: pos_integer(),
           chunks: [Orc.Chunk.t()],
-          binary: binary,
+          binary: Orc.compressed_binary(),
           max_size: pos_integer()
         }
 
