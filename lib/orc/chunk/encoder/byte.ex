@@ -3,4 +3,6 @@ defimpl Orc.Chunk.Encoder, for: Orc.Type.Byte do
     length = - byte_size(bytes)
     <<length::integer-signed-size(8)>> <> bytes
   end
+
+  def chunk_size(_t), do: 128
 end

@@ -1,6 +1,9 @@
 defprotocol Orc.Chunk.Encoder do
   @spec encode(t, list) :: Orc.Chunk.t()
   def encode(t, list)
+
+  @spec chunk_size(t) :: pos_integer()
+  def chunk_size(t)
 end
 
 defprotocol Orc.Chunk.Decoder do
