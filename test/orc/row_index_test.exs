@@ -7,18 +7,48 @@ defmodule Orc.RowIndexTest do
 
   defmodule TestType do
     defstruct []
+
+    defimpl Orc.Statistics do
+      def calculate(_t, list) do
+        Orc.Proto.ColumnStatistics.new(numberOfValues: length(list))
+      end
+
+      def merge(_t, stats1, stats2) do
+        %{stats1 | numberOfValues: stats1.numberOfValues + stats2.numberOfValues}
+      end
+    end
+
+    defimpl Orc.Chunk.Decoder do
+      def decode(_t, binary) do
+        {String.codepoints(binary), <<>>}
+      end
+    end
   end
 
-  test "will create default position when number of values less than 10_000" do
-    block = block(chunks: [chunk(count: 9_999)])
-    stream = stream(blocks: [block])
+  describe "index for less than 10_000 rows" do
+    setup do
+      block = block(chunks: [chunk(count: 9_999)])
+      stream = stream(blocks: [block])
+      index = Orc.RowIndex.create(stream)
 
-    positions =
-      Orc.RowIndex.create(stream)
-      |> Map.get(:entry)
-      |> Enum.map(&Map.get(&1, :positions))
+      [index: index]
+    end
 
-    assert positions == [[0, 0, 0]]
+    test "will create default position", %{index: index} do
+      positions =
+        Map.get(index, :entry)
+        |> Enum.map(&Map.get(&1, :positions))
+
+      assert positions == [[0, 0, 0]]
+    end
+
+    test "will have stats", %{index: index} do
+      [stats] =
+        Map.get(index, :entry)
+        |> Enum.map(&Map.get(&1, :statistics))
+
+      assert 9_999 == stats.numberOfValues
+    end
   end
 
   test "will use custom position function to create position array" do
@@ -33,53 +63,87 @@ defmodule Orc.RowIndexTest do
     assert positions == [[0, 0, 0, 0]]
   end
 
-  test "creates positions for 2 chunk over 10_000 values" do
-    chunk1 = chunk(count: 9_999)
-    chunk2 = chunk(count: 10)
+  describe "create multiple entries for over 10_000 values" do
+    setup do
+      chunk1 = chunk(count: 9_999)
+      chunk2 = chunk(count: 10)
 
-    block = block(chunks: [chunk1, chunk2])
-    stream = stream(blocks: [block])
+      block = block(chunks: [chunk1, chunk2])
+      stream = stream(blocks: [block])
 
-    positions =
-      Orc.RowIndex.create(stream)
-      |> Map.get(:entry)
-      |> Enum.map(&Map.get(&1, :positions))
+      index = Orc.RowIndex.create(stream)
 
-    assert positions == [
-             [0, 0, 0],
-             [0, Chunk.binary_size(chunk1), 1]
-           ]
+      [index: index, chunk1: chunk1]
+    end
+
+    test "multiple positions", %{index: index, chunk1: chunk1} do
+      positions =
+        Map.get(index, :entry)
+        |> Enum.map(&Map.get(&1, :positions))
+
+      assert positions == [
+        [0, 0, 0],
+        [0, Chunk.binary_size(chunk1), 1]
+      ]
+    end
+
+    test "stats", %{index: index} do
+      [stats1, stats2] =
+         Map.get(index, :entry)
+        |> Enum.map(&Map.get(&1, :statistics))
+
+      assert 10_000 == stats1.numberOfValues
+      assert 9 == stats2.numberOfValues
+    end
   end
 
-  test "multiple compressed blocks" do
-    chunk1 = chunk(count: 9_999)
-    chunk2 = chunk(count: 10)
-    chunk3 = chunk(count: 12_000)
-    chunk4 = chunk(count: 1_000)
+  describe "multiple compressed blocks" do
+    setup do
+      chunk1 = chunk(count: 9_999)
+      chunk2 = chunk(count: 10)
+      chunk3 = chunk(count: 12_000)
+      chunk4 = chunk(count: 1_000)
 
-    block1 = block(chunks: [chunk1, chunk2])
-    block2 = block(chunks: [chunk3, chunk4])
+      block1 = block(chunks: [chunk1, chunk2])
+      block2 = block(chunks: [chunk3, chunk4])
 
-    stream = stream(blocks: [block1, block2])
+      stream = stream(blocks: [block1, block2])
 
-    positions =
-      Orc.RowIndex.create(stream)
-      |> Map.get(:entry)
-      |> Enum.map(&Map.get(&1, :positions))
+      index = Orc.RowIndex.create(stream)
 
-    assert positions == [
-             [0, 0, 0],
-             [0, Chunk.binary_size(chunk1), 1],
-             [CompressedBlock.binary_size(block1), 0, 9_991]
-           ]
+      [index: index, chunk1: chunk1, block1: block1]
+    end
+
+    test "are referenced in positions", %{index: index, chunk1: chunk1, block1: block1} do
+      positions =
+        Map.get(index, :entry)
+        |> Enum.map(&Map.get(&1, :positions))
+
+      assert positions == [
+        [0, 0, 0],
+        [0, Chunk.binary_size(chunk1), 1],
+        [CompressedBlock.binary_size(block1), 0, 9_991]
+      ]
+    end
+
+    test "stats are correct acccross blocks", %{index: index} do
+      [stats1, stats2, stats3] =
+        Map.get(index, :entry)
+        |> Enum.map(&Map.get(&1, :statistics))
+
+      assert 10_000 == stats1.numberOfValues
+      assert 10_000 == stats2.numberOfValues
+      assert 3_009 == stats3.numberOfValues
+    end
   end
+
 
   defp chunk(opts) do
     count = Keyword.fetch!(opts, :count)
 
     Chunk.new(
       type: %TestType{},
-      binary: random_string(1_000),
+      binary: random_string(count),
       stats: Orc.Proto.ColumnStatistics.new(numberOfValues: count)
     )
   end
@@ -101,5 +165,4 @@ defmodule Orc.RowIndexTest do
       blocks: blocks
     )
   end
-
 end

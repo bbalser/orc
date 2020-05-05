@@ -20,6 +20,10 @@ defmodule Orc.Chunk do
     binary
   end
 
+  def stats(%__MODULE__{stats: stats}) do
+    stats
+  end
+
   def size(%__MODULE__{stats: stats}) do
     stats.numberOfValues
   end
