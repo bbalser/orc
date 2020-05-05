@@ -7,4 +7,10 @@ defprotocol Orc.Type do
 
   @spec column_encoding(t) :: [Orc.Proto.ColumnEncoding.t()]
   def column_encoding(t)
+
+  @spec streams(t, list) :: [Orc.Stream.t()]
+  def streams(t, list)
+
+  @spec values(t, [{Orc.stream_kind(), Orc.compressed_binary()}]) :: list()
+  def values(t, streams)
 end

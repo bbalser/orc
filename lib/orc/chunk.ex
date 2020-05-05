@@ -19,6 +19,10 @@ defmodule Orc.Chunk do
   def binary(%__MODULE__{binary: binary}) do
     binary
   end
+
+  def size(%__MODULE__{stats: stats}) do
+    stats.numberOfValues
+  end
 end
 
 defprotocol Orc.Chunk.Encoder do

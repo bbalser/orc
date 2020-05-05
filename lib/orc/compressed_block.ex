@@ -17,6 +17,10 @@ defmodule Orc.CompressedBlock do
     struct!(__MODULE__, attrs)
   end
 
+  def binary_size(%__MODULE__{binary: binary}) do
+    byte_size(binary)
+  end
+
   def fit?(%__MODULE__{} = block, %Chunk{} = chunk) do
     Chunk.binary_size(chunk) + block.estimated_size <= block.max_size
   end
