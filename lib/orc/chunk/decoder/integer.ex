@@ -10,5 +10,4 @@ defimpl Orc.Chunk.Decoder, for: Orc.Type.Integer do
   defp do_decode(<<3::size(2), _::bitstring>> = binary, signed?) do
     Orc.Chunk.Decoder.Integer.Delta.decode(binary, signed?)
   end
-
 end

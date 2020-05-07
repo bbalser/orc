@@ -19,7 +19,7 @@ defmodule Orc.Stream do
     |> Enum.join()
   end
 
-  def encode(t, list) do
+  def encode(t, list, kind \\ :DATA) do
     blocks =
       list
       |> Enum.chunk_every(Orc.Chunk.Encoder.chunk_size(t))
@@ -33,7 +33,7 @@ defmodule Orc.Stream do
 
     Orc.Stream.new(
       type: t,
-      kind: :DATA,
+      kind: kind,
       blocks: blocks
     )
   end
@@ -47,6 +47,35 @@ defmodule Orc.Stream do
     end)
     |> Enum.to_list()
     |> List.flatten()
+  end
+
+  @spec encode_presence(list) :: [] | [Orc.Stream.t()]
+  def encode_presence(list) do
+    case Enum.any?(list, &is_nil/1) do
+      true ->
+        presence = Enum.map(list, fn i -> i != nil end)
+
+        encode(Orc.boolean(), presence, :PRESENT)
+        |> List.wrap()
+
+      false ->
+        []
+    end
+  end
+
+  @spec decode_presence(Orc.compressed_binary() | nil, list) :: list
+  def decode_presence(nil, values), do: values
+
+  def decode_presence(presence_binary, values) do
+    presence = decode(Orc.boolean(), presence_binary)
+
+    {decoded_values, _} =
+      Enum.map_reduce(presence, values, fn
+        true, [head | tail] -> {head, tail}
+        false, integers -> {nil, integers}
+      end)
+
+    decoded_values
   end
 
   defp add_chunk_to_block(type, chunk, block) do
