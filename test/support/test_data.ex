@@ -22,12 +22,28 @@ defmodule TestData do
     end
   end
 
-  def random_booleans(n) do
+  def random_booleans(n, opts \\ []) do
+    rand_limit = if Keyword.get(opts, :nils?, false), do: 3, else: 2
     Enum.map(1..n, fn _ ->
-      case :rand.uniform(2) do
+      case :rand.uniform(rand_limit) do
         1 -> false
         2 -> true
+        3 -> nil
       end
     end)
+  end
+
+  def random_boolean(nil? \\ false)
+
+  def random_boolean(true) do
+    case :rand.uniform(3) do
+      1 -> false
+      2 -> true
+      3 -> nil
+    end
+  end
+
+  def random_boolean(false) do
+    :rand.uniform(2) == 1
   end
 end
