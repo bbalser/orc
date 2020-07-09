@@ -15,14 +15,18 @@ defmodule Orc.Type.Boolean do
     end
 
     def streams(t, list) do
-      Orc.Stream.encode(t, list)
-      |> List.wrap()
+      booleans = Enum.reject(list, &is_nil/1)
+      data_stream = Orc.Stream.encode(t, booleans)
+
+      Orc.Stream.encode_presence(list) ++ [data_stream]
     end
 
     def values(t, streams) do
       data_stream = Keyword.fetch!(streams, :DATA)
+      booleans = Orc.Stream.decode(t, data_stream)
 
-      Orc.Stream.decode(t, data_stream)
+      Keyword.get(streams, :PRESENT)
+      |> Orc.Stream.decode_presence(booleans)
     end
   end
 end

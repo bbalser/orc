@@ -30,7 +30,8 @@ defmodule Orc.Type.Integer do
       data_stream = Keyword.fetch!(streams, :DATA)
       integers = Orc.Stream.decode(t, data_stream)
 
-      Orc.Stream.decode_presence(Keyword.get(streams, :PRESENT), integers)
+      Keyword.get(streams, :PRESENT)
+      |> Orc.Stream.decode_presence(integers)
     end
   end
 end
