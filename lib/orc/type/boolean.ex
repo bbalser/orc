@@ -21,12 +21,37 @@ defmodule Orc.Type.Boolean do
       Orc.Stream.encode_presence(list) ++ [data_stream]
     end
 
-    def values(t, streams) do
-      data_stream = Keyword.fetch!(streams, :DATA)
-      booleans = Orc.Stream.decode(t, data_stream)
+    def index(_t, [stream | _] = streams) do
+      streams_by_kind =
+        Enum.reduce(streams, %{}, fn stream, acc -> Map.put(acc, stream.kind, stream) end)
 
-      Keyword.get(streams, :PRESENT)
-      |> Orc.Stream.decode_presence(booleans)
+      case Map.has_key?(streams_by_kind, :PRESENT) do
+        false ->
+          Orc.RowIndex.create(stream, fn c, d, l -> [c, d, leftover_bytes(l), 0] end)
+
+        true ->
+          present_index =
+            Map.get(streams_by_kind, :PRESENT)
+            |> Orc.RowIndex.create(fn c, d, l -> [c, d, leftover_bytes(l), 0] end)
+
+          data_index =
+            Map.get(streams_by_kind, :DATA)
+            |> Orc.RowIndex.create(fn c, d, l -> [c, d, leftover_bytes(l), 0] end)
+
+          entries =
+          Enum.zip(data_index.entry, present_index.entry)
+          |> Enum.map(fn {de, pe} ->
+            %{de | positions: pe.positions ++ de.positions}
+          end)
+
+          Orc.Proto.RowIndex.new(entry: entries)
+      end
+    end
+
+    defp leftover_bytes(length) do
+      (length / 8)
+      |> Float.ceil()
+      |> round()
     end
   end
 end

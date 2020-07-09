@@ -26,12 +26,8 @@ defmodule Orc.Type.Integer do
       Orc.Stream.encode_presence(list) ++ [data_stream]
     end
 
-    def values(t, streams) do
-      data_stream = Keyword.fetch!(streams, :DATA)
-      integers = Orc.Stream.decode(t, data_stream)
-
-      Keyword.get(streams, :PRESENT)
-      |> Orc.Stream.decode_presence(integers)
+    def index(_t, _streams) do
+      nil
     end
   end
 end

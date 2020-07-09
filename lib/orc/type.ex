@@ -11,6 +11,6 @@ defprotocol Orc.Type do
   @spec streams(t, list) :: [Orc.Stream.t()]
   def streams(t, list)
 
-  @spec values(t, [{Orc.stream_kind(), Orc.compressed_binary()}]) :: list()
-  def values(t, streams)
+  @spec index(t, [Orc.Stream.t()]) :: Orc.Proto.RowIndex.t()
+  def index(t, streams)
 end

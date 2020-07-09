@@ -1,5 +1,6 @@
 defmodule Orc.Type.IntegerTest do
   use ExUnit.Case
+  import TestData
 
   describe "streams/2" do
     test "encodes integers into a data stream" do
@@ -26,30 +27,15 @@ defmodule Orc.Type.IntegerTest do
     end
   end
 
-  describe "values/2" do
-    test "decodes data_stream into integers" do
-      integers = Enum.to_list(1..22)
+  describe "index/2" do
+    test "create row index for integer stream without nils" do
+      integers = random_numbers(22_000)
 
-      streams =
-        Orc.Type.streams(Orc.integer(signed?: true), integers)
-        |> Enum.map(fn stream -> {stream.kind, Orc.Stream.binary(stream)} end)
+      streams = Orc.Type.streams(Orc.integer(signed?: true), integers)
 
-      decoded = Orc.Type.values(Orc.integer(signed?: true), streams)
+      index = Orc.Type.index(Orc.integer(signed?: true), streams)
 
-      assert decoded == integers
-    end
 
-    test "decodes data_stream and presence stream into integer list" do
-      integers = [1, 2, 3, nil, 5, nil]
-
-      streams =
-        Orc.Type.streams(Orc.integer(signed?: true), integers)
-        |> Enum.map(fn stream -> {stream.kind, Orc.Stream.binary(stream)} end)
-
-      decoded = Orc.Type.values(Orc.integer(signed?: true), streams)
-
-      assert Enum.take(decoded, length(integers)) == integers
     end
   end
-
 end

@@ -137,7 +137,6 @@ defmodule Orc.RowIndexTest do
     end
   end
 
-
   defp chunk(opts) do
     count = Keyword.fetch!(opts, :count)
 

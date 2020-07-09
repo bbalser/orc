@@ -11,7 +11,7 @@ defmodule Orc.CompressedBlock do
           max_size: pos_integer()
         }
 
-  defstruct type: nil, estimated_size: 0, chunks: [], binary: nil, stats: nil, max_size: @max_size
+  defstruct type: nil, estimated_size: 0, chunks: [], binary: nil, max_size: @max_size
 
   def new(attrs) do
     struct!(__MODULE__, attrs)

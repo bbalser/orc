@@ -46,9 +46,9 @@ defmodule Orc.RowIndex do
             {included, excluded} = leftover_values(chunk, leftover)
 
             entry =
-              merge_into(acc.entry, Orc.Statistics.calculate(chunk.type, included), chunk.type)
+              merge_into(acc.entry, Orc.Statistics.calculate(chunk.type, included) |> hd(), chunk.type)
 
-            new_entry = new_entry(positions, Orc.Statistics.calculate(chunk.type, excluded))
+            new_entry = new_entry(positions, Orc.Statistics.calculate(chunk.type, excluded) |> hd())
 
             new_acc =
               Map.put(acc, :count, Chunk.size(chunk) - leftover)
